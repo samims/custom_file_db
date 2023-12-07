@@ -1,23 +1,21 @@
 package database
 
 import (
+	"custom_db/constants"
 	"fmt"
 	"os"
 	"testing"
 )
 
 func TestCreateTableMetadata(t *testing.T) {
-	type fields struct {
-		metaDataFileName string
-	}
 
 	type args struct {
 		colNames []string
 		colTypes []string
 	}
 
-	cleanUp := func(f *fields) {
-		err := os.Remove(f.metaDataFileName)
+	cleanUp := func() {
+		err := os.Remove(constants.DefaultTableMetadataName + ".txt")
 		if err != nil {
 			fmt.Println("error occurred during test metaData file remove")
 		}
@@ -25,34 +23,32 @@ func TestCreateTableMetadata(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		fields     fields
 		args       args
 		wantToPass bool
-		beforeTest func(*fields)
-		afterTest  func(*fields)
+		beforeTest func()
+		afterTest  func()
 	}{
 		{
 			"ValidInput",
-			fields{metaDataFileName: "test_file"},
 			args{
 				colNames: []string{"id", "name"},
 				colTypes: []string{"int", "string"},
 			},
 			true,
-			func(f *fields) {},
+			func() {},
 			cleanUp,
 		},
 
 		{
 			"MetadataFileExists",
-			fields{metaDataFileName: "test_file"},
+
 			args{
 				[]string{"id", "name"},
 				[]string{"int", "string"},
 			},
 			false,
-			func(f *fields) {
-				_, err := os.Create(f.metaDataFileName)
+			func() {
+				_, err := os.Create(constants.DefaultTableMetadataName + ".txt")
 				if err != nil {
 					return
 				}
@@ -61,23 +57,35 @@ func TestCreateTableMetadata(t *testing.T) {
 		},
 		{
 			"MismatchColumnTypes",
-			fields{"testfile"},
+
 			args{
 				[]string{"id"},
 				[]string{"int", "string"},
 			},
 			false,
-			func(f *fields) {},
-			cleanUp,
+			func() {},
+			func() {},
+		},
+		{
+			"ErrorOpeningFile",
+			args{
+				[]string{"id"},
+				[]string{"int", "string"},
+			},
+			false,
+			func() {
+			},
+			func() {
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.beforeTest(&tt.fields)
-			defer tt.afterTest(&tt.fields)
+			tt.beforeTest()
+			defer tt.afterTest()
 
-			mh := NewMetadataHandler(tt.fields.metaDataFileName)
+			mh := NewMetadataHandler()
 			err := mh.CreateTableMetadata(tt.args.colNames, tt.args.colTypes)
 
 			if tt.wantToPass && err != nil {

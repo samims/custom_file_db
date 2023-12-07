@@ -9,13 +9,12 @@ import (
 
 // MetadataHandler is a struct that handles metadata files.
 type MetadataHandler struct {
-	MetadataFile string
 }
 
 // NewMetadataHandler creates a new instance of MetadataHandler with the
 // provided metadataFile string.
-func NewMetadataHandler(metadataFile string) *MetadataHandler {
-	return &MetadataHandler{MetadataFile: metadataFile}
+func NewMetadataHandler() *MetadataHandler {
+	return &MetadataHandler{}
 }
 
 // CreateTableMetadata creates the metadata file for a new table with the given column names and column types.
@@ -23,7 +22,8 @@ func NewMetadataHandler(metadataFile string) *MetadataHandler {
 func (m *MetadataHandler) CreateTableMetadata(colNames []string, colTypes []string) error {
 	// error checking if table already exists the throw error,
 	// this is only single table project
-	if _, err := os.Stat(m.MetadataFile); err == nil {
+	var metadataFileName = constants.DefaultTableMetadataName + ".txt"
+	if _, err := os.Stat(metadataFileName); err == nil {
 		return fmt.Errorf("metadata file already exists")
 	}
 
@@ -31,9 +31,9 @@ func (m *MetadataHandler) CreateTableMetadata(colNames []string, colTypes []stri
 		return fmt.Errorf("number of column and type doesn't match")
 	}
 
-	file, err := os.OpenFile(m.MetadataFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(metadataFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("error opening metadata file: %w", err)
+		return fmt.Errorf("error creating metadata file: %w", err)
 
 	}
 	defer file.Close()
@@ -43,7 +43,7 @@ func (m *MetadataHandler) CreateTableMetadata(colNames []string, colTypes []stri
 	for i := range colNames {
 		cols[i] = fmt.Sprintf("%s %s\n", colNames[i], colTypes[i])
 	}
-	_, err = fmt.Fprintf(file, "%s %s\n", constants.DefaultTableName, strings.Join(cols, ","))
+	_, err = fmt.Fprintf(file, "%s\n", strings.Join(cols, ""))
 	if err != nil {
 		return fmt.Errorf("error writing to metadata file: %w", err)
 	}
