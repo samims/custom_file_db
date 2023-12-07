@@ -2,19 +2,23 @@ package database
 
 import (
 	"custom_db/constants"
+	"custom_db/utils"
+	"custom_db/wrapper"
 	"fmt"
 	"os"
-	"strings"
 )
 
 // MetadataHandler is a struct that handles metadata files.
 type MetadataHandler struct {
+	fileOperator wrapper.FileOperator
 }
 
 // NewMetadataHandler creates a new instance of MetadataHandler with the
 // provided metadataFile string.
-func NewMetadataHandler() *MetadataHandler {
-	return &MetadataHandler{}
+func NewMetadataHandler(fileOperator wrapper.FileOperator) *MetadataHandler {
+	return &MetadataHandler{
+		fileOperator: fileOperator,
+	}
 }
 
 // CreateTableMetadata creates the metadata file for a new table with the given column names and column types.
@@ -23,7 +27,7 @@ func (m *MetadataHandler) CreateTableMetadata(colNames []string, colTypes []stri
 	// error checking if table already exists the throw error,
 	// this is only single table project
 	var metadataFileName = constants.DefaultTableMetadataName + ".txt"
-	if _, err := os.Stat(metadataFileName); err == nil {
+	if _, err := m.fileOperator.Stat(metadataFileName); err == nil {
 		return fmt.Errorf("metadata file already exists")
 	}
 
@@ -31,22 +35,18 @@ func (m *MetadataHandler) CreateTableMetadata(colNames []string, colTypes []stri
 		return fmt.Errorf("number of column and type doesn't match")
 	}
 
-	file, err := os.OpenFile(metadataFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := m.fileOperator.OpenFile(metadataFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("error creating metadata file: %w", err)
 
 	}
-	defer file.Close()
 
-	cols := make([]string, len(colNames))
+	defer m.fileOperator.CloseFile(file)
 
-	for i := range colNames {
-		cols[i] = fmt.Sprintf("%s %s\n", colNames[i], colTypes[i])
-	}
-	_, err = fmt.Fprintf(file, "%s\n", strings.Join(cols, ""))
+	formattedStr := utils.FormatMetadataString(colNames, colTypes)
+	_, err = m.fileOperator.WriteString(file, formattedStr)
 	if err != nil {
 		return fmt.Errorf("error writing to metadata file: %w", err)
 	}
 	return nil
-
 }

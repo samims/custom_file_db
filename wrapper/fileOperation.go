@@ -6,6 +6,7 @@ import (
 )
 
 type FileOperator interface {
+	Stat(name string) (os.FileInfo, error)
 	OpenFile(name string, flag int, perm os.FileMode) (*os.File, error)
 	WriteString(file *os.File, s string) (int, error)
 	CloseFile(file *os.File) error
@@ -14,6 +15,15 @@ type FileOperator interface {
 // FileWrapper is the  implementation of FileOperator
 // using the actual os package
 type fileOperator struct {
+}
+
+// Stat returns the file information for the given file name using the os.Stat function.
+// It takes one parameter:
+// - name: the name of the file to retrieve information for.
+//
+// It returns the file information as an os.FileInfo structure and an error, if any occurred.
+func (f *fileOperator) Stat(name string) (os.FileInfo, error) {
+	return os.Stat(name)
 }
 
 // OpenFile opens a file by calling os.OpenFile function.
