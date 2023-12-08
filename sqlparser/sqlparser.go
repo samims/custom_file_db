@@ -76,7 +76,7 @@ func (s *SqlParser) handleInsertInto(tokens []string) error {
 // as part of the values.
 // If it is ')', it set the "inParentheses" flag to false and appends the current value (trimmed) to the "values" slice.
 func extractValues(str string) []string {
-	var values []string
+	var values = []string{}
 	inParentheses := false
 
 	var currentValue strings.Builder

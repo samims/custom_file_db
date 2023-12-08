@@ -81,26 +81,16 @@ func TestCreateTableMetadata(t *testing.T) {
 			},
 			false,
 			func(f *fields) {
-				_, err := os.Create(constants.DefaultTableMetadataName + ".txt")
-				if err != nil {
-					return
-				}
+				//fileInfo :=
+				f.fileOperator.On(
+					"Stat",
+					mock.Anything,
+				).Return(&wrapper.MockFileInfo{}, nil)
 			},
 			cleanUp,
 		},
 		{
-			"MismatchColumnTypes",
-			fields{},
-			args{
-				[]string{"id"},
-				[]string{"int", "string"},
-			},
-			false,
-			func(f *fields) {},
-			func(f *fields) {},
-		},
-		{
-			"ErrorOpeningFile",
+			"MismatchColumnTypeAndNameLength",
 			fields{},
 			args{
 				[]string{"id"},
@@ -108,6 +98,35 @@ func TestCreateTableMetadata(t *testing.T) {
 			},
 			false,
 			func(f *fields) {
+				//fileInfo :=
+				f.fileOperator.On(
+					"Stat",
+					mock.Anything,
+				).Return(&wrapper.MockFileInfo{}, errors.New("test"))
+			},
+			func(f *fields) {},
+		},
+		{
+			"ErrorOpeningFile",
+			fields{},
+			args{
+				[]string{"id"},
+				[]string{"int"},
+			},
+			false,
+			func(f *fields) {
+				//fileInfo :=
+				f.fileOperator.On(
+					"Stat",
+					mock.Anything,
+				).Return(&wrapper.MockFileInfo{}, errors.New("test"))
+				var file os.File
+				f.fileOperator.On(
+					"OpenFile",
+					mock.Anything,
+					mock.Anything,
+					mock.Anything,
+				).Return(&file, errors.New("error creating metadata file"))
 			},
 			func(f *fields) {
 			},
