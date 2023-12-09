@@ -2,6 +2,7 @@ package sqlparser
 
 import (
 	"custom_db/database"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -27,7 +28,7 @@ func (s *SqlParser) ParseSQLQuery(query string) error {
 		return fmt.Errorf("invalid sql query")
 	}
 	if strings.ToUpper(tokens[0]) == "CREATE" && strings.ToUpper(tokens[1]) == "TABLE" {
-		return s.handleCreateTable(tokens)
+		return s.handleCreateTable(query)
 	}
 	if strings.ToUpper(tokens[0]) == "INSERT" && strings.ToUpper(tokens[1]) == "INTO" {
 		return s.handleInsertInto(tokens)
@@ -35,11 +36,14 @@ func (s *SqlParser) ParseSQLQuery(query string) error {
 	return fmt.Errorf("unsupported SQL operation")
 }
 
-func (s *SqlParser) handleCreateTable(tokens []string) error {
-	colNames := strings.Split(tokens[3], ",")
-	colTypes := strings.Split(tokens[4], ",")
+// func (s *SqlParser) handleCreateTable(tokens []string) error {
+func (s *SqlParser) handleCreateTable(query string) error {
 
-	err := s.MetadataHandler.CreateTableMetadata(colNames, colTypes)
+	colNames, colTypes, err := extractColumns(query)
+	if err != nil {
+		return err
+	}
+	err = s.MetadataHandler.CreateTableMetadata(colNames, colTypes)
 
 	if err != nil {
 		return err
@@ -96,4 +100,34 @@ func extractValues(str string) []string {
 
 	}
 	return values
+}
+
+func extractColumns(tokens string) ([]string, []string, error) {
+	// Split the string on white space
+	split := strings.Split(tokens, " ")
+	// Ensure the structure of the string is as expected
+	if len(split) < 3 {
+		return nil, nil, errors.New("tokens are not in expected format")
+	}
+
+	tableDefinition := split[3:]
+	definitionStr := strings.Join(tableDefinition, " ")
+	definitionStr = strings.TrimPrefix(definitionStr, "(")
+	definitionStr = strings.TrimSuffix(definitionStr, ")")
+
+	var colNames []string
+	var colTypes []string
+
+	parts := strings.Split(definitionStr, ",")
+	for _, part := range parts {
+		trimmedPart := strings.TrimSpace(part)
+		subParts := strings.Fields(trimmedPart)
+		if len(subParts) != 2 {
+			return nil, nil, errors.New("invalid column definition format")
+		}
+		colNames = append(colNames, subParts[0])
+		colTypes = append(colTypes, subParts[1])
+	}
+
+	return colNames, colTypes, nil
 }
