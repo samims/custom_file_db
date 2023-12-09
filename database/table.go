@@ -35,7 +35,7 @@ func (t *TableHandler) InsertIntoTable(values []string) error {
 	defer t.fileOperator.CloseFile(file)
 
 	//_, err = fmt.Fprintf(file, "%s\n", strings.Join(values, ","))
-	strToWrite := fmt.Sprintf("%s\n", strings.Join(values, ","))
+	strToWrite := fmt.Sprintf("%s", strings.Join(values, ","))
 	_, err = t.fileOperator.WriteString(file, strToWrite)
 	if err != nil {
 		return fmt.Errorf("error writing to table file: %w", err)
