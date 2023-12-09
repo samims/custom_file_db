@@ -1,6 +1,7 @@
 package sqlparser
 
 import (
+	"custom_db/constants"
 	"custom_db/database"
 	"errors"
 	"fmt"
@@ -68,6 +69,7 @@ func (s *SqlParser) handleInsertInto(tokens []string) error {
 
 	// insert into the table
 	err := s.TableHandler.InsertIntoTable(extractedValues)
+
 	if err != nil {
 		return fmt.Errorf("error inserting values into table: %w", err)
 	}
@@ -102,15 +104,16 @@ func extractValues(str string) []string {
 	return values
 }
 
-func extractColumns(tokens string) ([]string, []string, error) {
+func extractColumns(query string) ([]string, []string, error) {
 	// Split the string on white space
-	split := strings.Split(tokens, " ")
+	splitQuery := strings.Split(query, " ")
 	// Ensure the structure of the string is as expected
-	if len(split) < 3 {
-		return nil, nil, errors.New("tokens are not in expected format")
+	if len(splitQuery) < 3 {
+		return nil, nil, errors.New(constants.ErrQueryUnSupportedFormat)
 	}
 
-	tableDefinition := split[3:]
+	tableDefinition := splitQuery[3:]
+
 	definitionStr := strings.Join(tableDefinition, " ")
 	definitionStr = strings.TrimPrefix(definitionStr, "(")
 	definitionStr = strings.TrimSuffix(definitionStr, ")")
@@ -123,11 +126,25 @@ func extractColumns(tokens string) ([]string, []string, error) {
 		trimmedPart := strings.TrimSpace(part)
 		subParts := strings.Fields(trimmedPart)
 		if len(subParts) != 2 {
-			return nil, nil, errors.New("invalid column definition format")
+			return nil, nil, errors.New(constants.ErrInvalidColumnDefFormat)
 		}
-		colNames = append(colNames, subParts[0])
-		colTypes = append(colTypes, subParts[1])
+		cName := subParts[0]
+		cType := subParts[1]
+
+		// validate cType by checking it's only supported types
+		if !isValidColumnType(cType) {
+			return nil, nil, errors.New(constants.ErrUnSupportedColumnType)
+		}
+
+		colNames = append(colNames, cName)
+		colTypes = append(colTypes, cType)
 	}
 
 	return colNames, colTypes, nil
+}
+
+// isValidColumnType checks if the given column type is valid.
+// It returns true if the column type is either "int" or "string", false otherwise.
+func isValidColumnType(cType string) bool {
+	return (strings.ToLower(cType) == constants.IntegerType) || (strings.ToLower(cType) == constants.StringType)
 }

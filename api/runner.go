@@ -23,7 +23,7 @@ func (runner *apiRunner) Go(ctx context.Context, wg *sync.WaitGroup) {
 
 	fileOperator := wrapper.NewFileOperator()
 	metadataHandler := database.NewMetadataHandler(fileOperator)
-	tableHandler := database.NewTableHandler(fileOperator)
+	tableHandler := database.NewTableHandler(fileOperator, *metadataHandler)
 
 	sqlParser := sqlparser.NewSqlParser(metadataHandler, tableHandler)
 

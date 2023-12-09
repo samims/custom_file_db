@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Test")
+	fmt.Println("Server is booting....")
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	ctx := context.Background()

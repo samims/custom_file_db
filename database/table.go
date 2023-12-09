@@ -5,18 +5,21 @@ import (
 	"custom_db/wrapper"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
 type TableHandler struct {
-	fileOperator wrapper.FileOperator
+	fileOperator    wrapper.FileOperator
+	metaDataHandler MetadataHandler
 }
 
 // NewTableHandler creates a new instance of TableHandler and returns a pointer to it.
 // The TableHandler struct is used to handle operations related to a table, such as inserting values into it.
-func NewTableHandler(fileOperator wrapper.FileOperator) *TableHandler {
+func NewTableHandler(fileOperator wrapper.FileOperator, metadataHandler MetadataHandler) *TableHandler {
 	return &TableHandler{
-		fileOperator: fileOperator,
+		fileOperator:    fileOperator,
+		metaDataHandler: metadataHandler,
 	}
 }
 
@@ -33,12 +36,58 @@ func (t *TableHandler) InsertIntoTable(values []string) error {
 	}
 	//defer file.Close()
 	defer t.fileOperator.CloseFile(file)
-
-	//_, err = fmt.Fprintf(file, "%s\n", strings.Join(values, ","))
+	err = t.ValidateDataType(values)
+	if err != nil {
+		return err
+	}
 	strToWrite := fmt.Sprintf("%s", strings.Join(values, ","))
 	_, err = t.fileOperator.WriteString(file, strToWrite)
 	if err != nil {
 		return fmt.Errorf("error writing to table file: %w", err)
+	}
+	return nil
+}
+
+func (t *TableHandler) ValidateDataType(values []string) error {
+	metadataFile := constants.DefaultTableMetadataName + ".txt"
+	types, err := t.metaDataHandler.ReadColumnTypes(metadataFile)
+	if err != nil {
+		return err
+	}
+
+	return t.validateColumnTypes(types, values)
+}
+
+func (t *TableHandler) validateColumnTypes(types map[string]string, values []string) error {
+	index := 0
+	valueStr := values[0]
+	splitValueStr := strings.Split(valueStr, ",")
+	fmt.Println(values[0])
+	for colName, colType := range types {
+		err := validateColumnType(colName, colType, splitValueStr[index])
+		if err != nil {
+			return err
+		}
+		index++
+	}
+
+	return nil
+}
+
+func validateColumnType(colName, colType, value string) error {
+	// Validation logic for each data type (int, string, float, etc.)
+	// Implement the respective checks for the data type
+	// Example:
+	if strings.ToLower(colType) == "int" {
+		if _, err := strconv.Atoi(value); err != nil {
+			return fmt.Errorf("invalid data type for column '%s': expected int", colName)
+		}
+	} else if strings.ToLower(colType) == "string" {
+		// No parsing needed for string type
+		// parse to string
+		fmt.Println("string type parsed")
+	} else {
+		return fmt.Errorf("unsupported data type for column '%s': %s", colName, colType)
 	}
 	return nil
 }
