@@ -23,18 +23,25 @@ func NewSqlParser(metadataHandler database.MetadataHandler, tableHandler databas
 	}
 }
 
-func (s *SqlParser) ParseSQLQuery(query string) error {
+func (s *SqlParser) ParseSQLQuery(query string) ([]map[string]any, error) {
+	var result []map[string]any
+
 	tokens := strings.Fields(query)
 	if len(tokens) < 4 {
-		return fmt.Errorf("invalid sql query")
+		return result, fmt.Errorf("invalid sql query")
 	}
 	if strings.ToUpper(tokens[0]) == "CREATE" && strings.ToUpper(tokens[1]) == "TABLE" {
-		return s.handleCreateTable(query)
+		return result, s.handleCreateTable(query)
 	}
 	if strings.ToUpper(tokens[0]) == "INSERT" && strings.ToUpper(tokens[1]) == "INTO" {
-		return s.handleInsertInto(tokens)
+		return result, s.handleInsertInto(tokens)
 	}
-	return fmt.Errorf("unsupported SQL operation")
+
+	if strings.ToUpper(tokens[0]) == "SELECT" && strings.ToUpper(tokens[1]) == "*" && strings.ToUpper(tokens[2]) == "FROM" {
+		result, err := s.handleSelectFrom(query)
+		return result, err
+	}
+	return result, fmt.Errorf("unsupported SQL operation")
 }
 
 // func (s *SqlParser) handleCreateTable(tokens []string) error {
@@ -74,6 +81,24 @@ func (s *SqlParser) handleInsertInto(tokens []string) error {
 		return fmt.Errorf("error inserting values into table: %w", err)
 	}
 	return nil
+}
+
+func (s *SqlParser) handleSelectFrom(query string) ([]map[string]any, error) {
+	metadataDataFile := constants.DefaultTableMetadataName + ".txt"
+	result := make([]map[string]any, 0)
+
+	colNames, colTypes, err := s.MetadataHandler.ReadColNamesAndTypesInArray(metadataDataFile)
+	if err != nil {
+		return result, err
+	}
+
+	result, err = s.TableHandler.SelectFrom(query, colNames, colTypes)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
+
 }
 
 // extractValues extracts the values within parentheses from the provided string and returns them as a slice of strings.

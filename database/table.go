@@ -1,6 +1,7 @@
 package database
 
 import (
+	"bufio"
 	"custom_db/constants"
 	"custom_db/wrapper"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 
 type TableHandler interface {
 	InsertIntoTable(values []string) error
+	SelectFrom(query string, colNames, colTypes []string) ([]map[string]any, error)
 	ValidateDataType(values []string) error
 }
 
@@ -77,6 +79,53 @@ func (t *tableHandler) validateColumnTypes(types map[string]string, values []str
 	}
 
 	return nil
+}
+
+func (t *tableHandler) SelectFrom(query string, colNames, colTypes []string) ([]map[string]any, error) {
+
+	file, err := t.fileOperator.OpenFile(constants.DefaultTableName+".txt", os.O_RDONLY, 0)
+	if err != nil {
+		return nil, fmt.Errorf("error opening table file: %w", err)
+	}
+	defer t.fileOperator.CloseFile(file)
+
+	var result []map[string]any
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, ",")
+		row := make(map[string]any)
+		for i, value := range parts {
+			columnName := colNames[i]
+			colType := colTypes[i]
+			if strings.ToLower(colType) == constants.IntegerType {
+				parsedVal, err := strconv.Atoi(value)
+				if err != nil {
+					return result, fmt.Errorf("invalid data type for column '%s': expected int", columnName)
+				}
+				row[columnName] = parsedVal
+				continue
+
+			} else if strings.ToLower(colType) == constants.StringType {
+			} else {
+				return result, fmt.Errorf("unsupported data type for column '%s': %s", columnName, colType)
+			}
+			row[columnName] = value
+		}
+		result = append(result, row)
+	}
+
+	// [{'id: 1, 'name' 'val1']
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error scanning table file: %w", err)
+	}
+
+	return result, nil
+
 }
 
 func validateColumnType(colName, colType, value string) error {

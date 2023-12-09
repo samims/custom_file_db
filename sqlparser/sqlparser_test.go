@@ -14,22 +14,22 @@ func TestSqlParser(t *testing.T) {
 	parser := NewSqlParser(metadataHandlerMock, tableHandlerMock)
 
 	t.Run("parse empty query", func(t *testing.T) {
-		err := parser.ParseSQLQuery("")
+		_, err := parser.ParseSQLQuery("")
 		assert.Equal(t, "invalid sql query", err.Error())
 	})
 
 	t.Run("parse unsupported operation", func(t *testing.T) {
-		err := parser.ParseSQLQuery("INVALID * FROM table_name")
+		_, err := parser.ParseSQLQuery("INVALID * FROM table_name")
 		assert.Equal(t, "unsupported SQL operation", err.Error())
 	})
 
 	t.Run("parse create table without enough tokens", func(t *testing.T) {
-		err := parser.ParseSQLQuery("CREATE TABLE table_name")
+		_, err := parser.ParseSQLQuery("CREATE TABLE table_name")
 		assert.Equal(t, "invalid sql query", err.Error())
 	})
 
 	t.Run("parse insert into without values", func(t *testing.T) {
-		err := parser.ParseSQLQuery("INSERT INTO students values")
+		_, err := parser.ParseSQLQuery("INSERT INTO students values")
 		assert.Equal(t, "no values found in insert query", err.Error())
 	})
 

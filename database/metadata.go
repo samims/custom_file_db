@@ -13,6 +13,7 @@ import (
 type MetadataHandler interface {
 	CreateTableMetadata(colNames []string, colTypes []string) error
 	ReadColumnTypes(filename string) (map[string]string, error)
+	ReadColNamesAndTypesInArray(fileName string) ([]string, []string, error)
 }
 
 // MetadataHandler is a struct that handles metadata files.
@@ -85,4 +86,19 @@ func (m *metadataHandler) ReadColumnTypes(filename string) (map[string]string, e
 	}
 
 	return metaTypes, nil
+}
+
+func (m *metadataHandler) ReadColNamesAndTypesInArray(fileName string) ([]string, []string, error) {
+	types, err := m.ReadColumnTypes(fileName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var colNames []string
+	var colTypes []string
+	for name, typ := range types {
+		colNames = append(colNames, name)
+		colTypes = append(colTypes, typ)
+	}
+	return colNames, colTypes, nil
 }

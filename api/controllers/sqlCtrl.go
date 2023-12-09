@@ -24,12 +24,17 @@ func (s *sqlCtrl) Query(ctx *gin.Context) {
 		return
 	}
 	fmt.Println(data.Query)
-	err = s.sqlParser.ParseSQLQuery(data.Query)
+	dataList, err := s.sqlParser.ParseSQLQuery(data.Query)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "Query executed successfully"})
+	if len(dataList) > 0 {
+		ctx.JSON(http.StatusOK, gin.H{"message": "Query executed successfully", "data": dataList})
+	} else {
+		ctx.JSON(http.StatusOK, gin.H{"message": "Query executed successfully"})
+
+	}
 }
 
 func NewSQLCtrl(sqlParser sqlparser.SqlParser) SQLCtrl {

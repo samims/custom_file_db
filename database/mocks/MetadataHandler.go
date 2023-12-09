@@ -9,6 +9,11 @@ type MetadataHandler struct {
 	mock.Mock
 }
 
+func (_m *MetadataHandler) ReadColNamesAndTypesInArray(fileName string) ([]string, []string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 // CreateTableMetadata provides a mock function with given fields: colNames, colTypes
 func (_m *MetadataHandler) CreateTableMetadata(colNames []string, colTypes []string) error {
 	ret := _m.Called(colNames, colTypes)
