@@ -9,15 +9,20 @@ import (
 	"strings"
 )
 
-type TableHandler struct {
+type TableHandler interface {
+	InsertIntoTable(values []string) error
+	ValidateDataType(values []string) error
+}
+
+type tableHandler struct {
 	fileOperator    wrapper.FileOperator
 	metaDataHandler MetadataHandler
 }
 
 // NewTableHandler creates a new instance of TableHandler and returns a pointer to it.
 // The TableHandler struct is used to handle operations related to a table, such as inserting values into it.
-func NewTableHandler(fileOperator wrapper.FileOperator, metadataHandler MetadataHandler) *TableHandler {
-	return &TableHandler{
+func NewTableHandler(fileOperator wrapper.FileOperator, metadataHandler MetadataHandler) TableHandler {
+	return &tableHandler{
 		fileOperator:    fileOperator,
 		metaDataHandler: metadataHandler,
 	}
@@ -28,7 +33,7 @@ func NewTableHandler(fileOperator wrapper.FileOperator, metadataHandler Metadata
 // - values: a slice of strings representing the values to be inserted into the table
 // Returns:
 // - error: if there is an error opening or writing to the table file
-func (t *TableHandler) InsertIntoTable(values []string) error {
+func (t *tableHandler) InsertIntoTable(values []string) error {
 	//file, err := os.OpenFile(constants.DefaultTableName+".txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	file, err := t.fileOperator.OpenFile(constants.DefaultTableName+".txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -48,7 +53,7 @@ func (t *TableHandler) InsertIntoTable(values []string) error {
 	return nil
 }
 
-func (t *TableHandler) ValidateDataType(values []string) error {
+func (t *tableHandler) ValidateDataType(values []string) error {
 	metadataFile := constants.DefaultTableMetadataName + ".txt"
 	types, err := t.metaDataHandler.ReadColumnTypes(metadataFile)
 	if err != nil {
@@ -58,7 +63,7 @@ func (t *TableHandler) ValidateDataType(values []string) error {
 	return t.validateColumnTypes(types, values)
 }
 
-func (t *TableHandler) validateColumnTypes(types map[string]string, values []string) error {
+func (t *tableHandler) validateColumnTypes(types map[string]string, values []string) error {
 	index := 0
 	valueStr := values[0]
 	splitValueStr := strings.Split(valueStr, ",")

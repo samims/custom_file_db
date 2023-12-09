@@ -1,17 +1,17 @@
 package sqlparser
 
 import (
-	"custom_db/database"
+	"custom_db/database/mocks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSqlParser(t *testing.T) {
-	metadataHandler := new(database.MetadataHandler)
-	tableHandler := new(database.TableHandler)
+	metadataHandlerMock := mocks.NewMetadataHandler(t)
+	tableHandlerMock := mocks.NewTableHandler(t)
 
-	parser := NewSqlParser(metadataHandler, tableHandler)
+	parser := NewSqlParser(metadataHandlerMock, tableHandlerMock)
 
 	t.Run("parse empty query", func(t *testing.T) {
 		err := parser.ParseSQLQuery("")

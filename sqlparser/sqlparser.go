@@ -11,12 +11,12 @@ import (
 // SqlParser represents a SQL parser that handles metadata and table operations.
 type SqlParser struct {
 	MetadataHandler database.MetadataHandler
-	TableHandler    *database.TableHandler
+	TableHandler    database.TableHandler
 }
 
 // NewSqlParser creates a new instance of SqlParser initialized with the provided MetadataHandler and TableHandler.
 // The MetadataHandler is used for handling metadata operations such as creating table metadata, while the TableHandler is used for handling table operations such as inserting data into
-func NewSqlParser(metadataHandler database.MetadataHandler, tableHandler *database.TableHandler) *SqlParser {
+func NewSqlParser(metadataHandler database.MetadataHandler, tableHandler database.TableHandler) *SqlParser {
 	return &SqlParser{
 		MetadataHandler: metadataHandler,
 		TableHandler:    tableHandler,
