@@ -2,16 +2,16 @@ package database
 
 import (
 	"bufio"
-	"custom_db/constants"
 	"custom_db/utils"
 	"custom_db/wrapper"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 )
 
 type MetadataHandler interface {
-	CreateTableMetadata(colNames []string, colTypes []string) error
+	CreateTableMetadata(tableName string, colNames []string, colTypes []string) error
 	ReadColumnTypes(filename string) (map[string]string, error)
 	ReadColNamesAndTypesInArray(fileName string) ([]string, []string, error)
 }
@@ -32,8 +32,12 @@ func NewMetadataHandler(fileOperator wrapper.FileOperator) MetadataHandler {
 // CreateTableMetadata creates the metadata file for a new table with the given
 // column names and column types. The method performs error checking
 // to ensure that the metadata file does
-func (m *metadataHandler) CreateTableMetadata(colNames []string, colTypes []string) error {
-	var metadataFileName = constants.DefaultTableMetadataName + ".txt"
+func (m *metadataHandler) CreateTableMetadata(tableName string, colNames []string, colTypes []string) error {
+	if !utils.IsDirEmpty() {
+		return errors.New(`table already exists. please delete as this is a single table system`)
+	}
+
+	var metadataFileName = utils.GetMetadataFileName(tableName)
 	if _, err := m.fileOperator.Stat(metadataFileName); err == nil {
 		return fmt.Errorf("metadata file already exists")
 	}

@@ -3,6 +3,7 @@ package database
 import (
 	"bufio"
 	"custom_db/constants"
+	"custom_db/utils"
 	"custom_db/wrapper"
 	"fmt"
 	"os"
@@ -11,9 +12,10 @@ import (
 )
 
 type TableHandler interface {
-	InsertIntoTable(values []string) error
-	SelectFrom(query string, colNames, colTypes []string) ([]map[string]any, error)
-	ValidateDataType(values []string) error
+	CreateEmptyTable(tableName string) error
+	InsertIntoTable(tableName string, values []string) error
+	SelectFrom(tableName, query string, colNames, colTypes []string) ([]map[string]any, error)
+	ValidateDataType(tableName string, values []string) error
 }
 
 type tableHandler struct {
@@ -30,20 +32,31 @@ func NewTableHandler(fileOperator wrapper.FileOperator, metadataHandler Metadata
 	}
 }
 
+func (t *tableHandler) CreateEmptyTable(tableName string) error {
+	tableFileName := utils.GetTableFileName(tableName)
+	// create empty file
+	_, err := t.fileOperator.OpenFile(tableFileName, os.O_CREATE, 0644)
+	if err != nil {
+		return fmt.Errorf("error creating table file: %w", err)
+	}
+	return nil
+}
+
 // InsertIntoTable opens the table file in append mode, writes the values to it separated by commas, and closes the file.
 // Parameters:
 // - values: a slice of strings representing the values to be inserted into the table
 // Returns:
 // - error: if there is an error opening or writing to the table file
-func (t *tableHandler) InsertIntoTable(values []string) error {
+func (t *tableHandler) InsertIntoTable(tableName string, values []string) error {
 	//file, err := os.OpenFile(constants.DefaultTableName+".txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	file, err := t.fileOperator.OpenFile(constants.DefaultTableName+".txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	tableFileName := utils.GetTableFileName(tableName)
+	file, err := t.fileOperator.OpenFile(tableFileName, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("error opening table file %w", err)
 	}
 	//defer file.Close()
 	defer t.fileOperator.CloseFile(file)
-	err = t.ValidateDataType(values)
+	err = t.ValidateDataType(tableName, values)
 	if err != nil {
 		return err
 	}
@@ -55,8 +68,8 @@ func (t *tableHandler) InsertIntoTable(values []string) error {
 	return nil
 }
 
-func (t *tableHandler) ValidateDataType(values []string) error {
-	metadataFile := constants.DefaultTableMetadataName + ".txt"
+func (t *tableHandler) ValidateDataType(tableName string, values []string) error {
+	metadataFile := utils.GetMetadataFileName(tableName)
 	types, err := t.metaDataHandler.ReadColumnTypes(metadataFile)
 	if err != nil {
 		return err
@@ -81,9 +94,9 @@ func (t *tableHandler) validateColumnTypes(types map[string]string, values []str
 	return nil
 }
 
-func (t *tableHandler) SelectFrom(query string, colNames, colTypes []string) ([]map[string]any, error) {
-
-	file, err := t.fileOperator.OpenFile(constants.DefaultTableName+".txt", os.O_RDONLY, 0)
+func (t *tableHandler) SelectFrom(tableName, query string, colNames, colTypes []string) ([]map[string]any, error) {
+	tableFileName := utils.GetTableFileName(tableName)
+	file, err := t.fileOperator.OpenFile(tableFileName, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, fmt.Errorf("error opening table file: %w", err)
 	}

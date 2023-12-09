@@ -15,10 +15,15 @@ func Test_InsertIntoTable(t *testing.T) {
 		metadataHandler *mocks.MetadataHandler
 	}
 
+	type args struct {
+		tableName string
+		values    []string
+	}
+
 	type testCase struct {
 		name       string
 		fields     fields
-		values     []string
+		args       args
 		createErr  bool
 		writeErr   bool
 		beforeTest func(*fields)
@@ -30,7 +35,7 @@ func Test_InsertIntoTable(t *testing.T) {
 		{
 			name:      "no error",
 			fields:    fields{},
-			values:    []string{"one", "two", "three"},
+			args:      args{"abc", []string{"one", "two", "three"}},
 			createErr: false,
 			beforeTest: func(f *fields) {
 				var file os.File
@@ -63,8 +68,9 @@ func Test_InsertIntoTable(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:   "open error",
-			values: []string{"stooges", "bar"},
+			name: "open error",
+			args: args{"abc", []string{"stooges", "bar"}},
+
 			beforeTest: func(f *fields) {
 				var file *os.File
 				f.fileOperator.On(
@@ -83,7 +89,7 @@ func Test_InsertIntoTable(t *testing.T) {
 		},
 		{
 			name:      "write error",
-			values:    []string{"foo", "invalid"},
+			args:      args{"abc", []string{"foo", "invalid"}},
 			createErr: false,
 			beforeTest: func(f *fields) {
 				var file os.File
@@ -127,7 +133,7 @@ func Test_InsertIntoTable(t *testing.T) {
 			}
 			handler := NewTableHandler(tc.fields.fileOperator, tc.fields.metadataHandler)
 
-			gotErr := handler.InsertIntoTable(tc.values) != nil
+			gotErr := handler.InsertIntoTable(tc.args.tableName, tc.args.values) != nil
 			if gotErr != tc.wantErr {
 				t.Errorf("InsertIntoTable() error = %v, wantErr %v", gotErr, tc.wantErr)
 				return

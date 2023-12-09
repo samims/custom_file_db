@@ -2,6 +2,8 @@ package utils
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"strings"
 )
 
@@ -15,4 +17,32 @@ func FormatMetadataString(colNames, colTypes []string) string {
 	}
 	formattedStr := fmt.Sprintf("%s", strings.Join(cols, ""))
 	return formattedStr
+}
+
+func GetMetadataFileName(tableName string) string {
+	return fmt.Sprintf("data/%s.metadata", tableName)
+}
+
+func GetTableFileName(tableName string) string {
+	return fmt.Sprintf("data/%s.txt", tableName)
+}
+
+func IsDirEmpty() bool {
+	// check if /data directory empty
+	// create directory if not exists
+	if _, err := os.Stat("data"); os.IsNotExist(err) {
+		os.Mkdir("data", 0755)
+	}
+
+	fi, err := os.Open("data")
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	defer fi.Close()
+	_, err = fi.Readdirnames(1)
+	if err == io.EOF {
+		return true
+	}
+	return false
 }

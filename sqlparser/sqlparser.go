@@ -3,6 +3,7 @@ package sqlparser
 import (
 	"custom_db/constants"
 	"custom_db/database"
+	"custom_db/utils"
 	"errors"
 	"fmt"
 	"strings"
@@ -31,38 +32,41 @@ func (s *SqlParser) ParseSQLQuery(query string) ([]map[string]any, error) {
 		return result, fmt.Errorf("invalid sql query")
 	}
 	if strings.ToUpper(tokens[0]) == "CREATE" && strings.ToUpper(tokens[1]) == "TABLE" {
-		return result, s.handleCreateTable(query)
+		tableName := tokens[2]
+		return result, s.handleCreateTable(tableName, query)
 	}
 	if strings.ToUpper(tokens[0]) == "INSERT" && strings.ToUpper(tokens[1]) == "INTO" {
-		return result, s.handleInsertInto(tokens)
+		tableName := tokens[2]
+		return result, s.handleInsertInto(tableName, tokens)
 	}
 
 	if strings.ToUpper(tokens[0]) == "SELECT" && strings.ToUpper(tokens[1]) == "*" && strings.ToUpper(tokens[2]) == "FROM" {
-		result, err := s.handleSelectFrom(query)
+		tableName := tokens[3]
+		result, err := s.handleSelectFrom(tableName, query)
 		return result, err
 	}
 	return result, fmt.Errorf("unsupported SQL operation")
 }
 
 // func (s *SqlParser) handleCreateTable(tokens []string) error {
-func (s *SqlParser) handleCreateTable(query string) error {
+func (s *SqlParser) handleCreateTable(tableName, query string) error {
 
 	colNames, colTypes, err := extractColumns(query)
 	if err != nil {
 		return err
 	}
-	err = s.MetadataHandler.CreateTableMetadata(colNames, colTypes)
-
+	err = s.MetadataHandler.CreateTableMetadata(tableName, colNames, colTypes)
 	if err != nil {
 		return err
 	}
-	return nil
+	err = s.TableHandler.CreateEmptyTable(tableName)
+	return err
 
 }
 
 // handleInsertInto is responsible for implementing the logic to handle the "INSERT INTO" SQL operation.
 // This method currently returns an error indicating that the insert operation is not yet implemented.
-func (s *SqlParser) handleInsertInto(tokens []string) error {
+func (s *SqlParser) handleInsertInto(tableName string, tokens []string) error {
 	if len(tokens) < 4 {
 		return fmt.Errorf("invalid `insert` query")
 	}
@@ -75,7 +79,7 @@ func (s *SqlParser) handleInsertInto(tokens []string) error {
 	}
 
 	// insert into the table
-	err := s.TableHandler.InsertIntoTable(extractedValues)
+	err := s.TableHandler.InsertIntoTable(tableName, extractedValues)
 
 	if err != nil {
 		return fmt.Errorf("error inserting values into table: %w", err)
@@ -83,8 +87,8 @@ func (s *SqlParser) handleInsertInto(tokens []string) error {
 	return nil
 }
 
-func (s *SqlParser) handleSelectFrom(query string) ([]map[string]any, error) {
-	metadataDataFile := constants.DefaultTableMetadataName + ".txt"
+func (s *SqlParser) handleSelectFrom(tableName, query string) ([]map[string]any, error) {
+	metadataDataFile := utils.GetMetadataFileName(tableName)
 	result := make([]map[string]any, 0)
 
 	colNames, colTypes, err := s.MetadataHandler.ReadColNamesAndTypesInArray(metadataDataFile)
@@ -92,7 +96,7 @@ func (s *SqlParser) handleSelectFrom(query string) ([]map[string]any, error) {
 		return result, err
 	}
 
-	result, err = s.TableHandler.SelectFrom(query, colNames, colTypes)
+	result, err = s.TableHandler.SelectFrom(tableName, query, colNames, colTypes)
 	if err != nil {
 		return nil, err
 	}
