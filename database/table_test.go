@@ -1,6 +1,7 @@
 package database
 
 import (
+	"custom_db/database/mocks"
 	"custom_db/wrapper"
 	"errors"
 	"github.com/stretchr/testify/mock"
@@ -10,7 +11,8 @@ import (
 
 func Test_InsertIntoTable(t *testing.T) {
 	type fields struct {
-		fileOperator *wrapper.MockFileOperator
+		fileOperator    *wrapper.MockFileOperator
+		metadataHandler *mocks.MetadataHandler
 	}
 
 	type testCase struct {
@@ -38,6 +40,11 @@ func Test_InsertIntoTable(t *testing.T) {
 					mock.Anything,
 					mock.Anything,
 				).Return(&file, nil)
+
+				f.metadataHandler.On(
+					"ReadColumnTypes",
+					mock.Anything,
+				).Return(make(map[string]string), nil)
 
 				f.fileOperator.On(
 					"WriteString",
@@ -87,6 +94,11 @@ func Test_InsertIntoTable(t *testing.T) {
 					mock.Anything,
 				).Return(&file, nil)
 
+				f.metadataHandler.On(
+					"ReadColumnTypes",
+					mock.Anything,
+				).Return(make(map[string]string), nil)
+
 				f.fileOperator.On(
 					"WriteString",
 					mock.Anything,
@@ -107,13 +119,13 @@ func Test_InsertIntoTable(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.fields = fields{fileOperator: wrapper.NewFileOperatorMock(t)}
+			tc.fields.fileOperator = wrapper.NewFileOperatorMock(t)
+			tc.fields.metadataHandler = mocks.NewMetadataHandler(t)
 
 			if tc.beforeTest != nil {
 				tc.beforeTest(&tc.fields)
 			}
-
-			handler := NewTableHandler(tc.fields.fileOperator)
+			handler := NewTableHandler(tc.fields.fileOperator, tc.fields.metadataHandler)
 
 			gotErr := handler.InsertIntoTable(tc.values) != nil
 			if gotErr != tc.wantErr {

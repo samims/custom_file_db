@@ -10,15 +10,20 @@ import (
 	"strings"
 )
 
+type MetadataHandler interface {
+	CreateTableMetadata(colNames []string, colTypes []string) error
+	ReadColumnTypes(filename string) (map[string]string, error)
+}
+
 // MetadataHandler is a struct that handles metadata files.
-type MetadataHandler struct {
+type metadataHandler struct {
 	fileOperator wrapper.FileOperator
 }
 
 // NewMetadataHandler creates a new instance of MetadataHandler with the
 // provided metadataFile string.
-func NewMetadataHandler(fileOperator wrapper.FileOperator) *MetadataHandler {
-	return &MetadataHandler{
+func NewMetadataHandler(fileOperator wrapper.FileOperator) MetadataHandler {
+	return &metadataHandler{
 		fileOperator: fileOperator,
 	}
 }
@@ -26,7 +31,7 @@ func NewMetadataHandler(fileOperator wrapper.FileOperator) *MetadataHandler {
 // CreateTableMetadata creates the metadata file for a new table with the given
 // column names and column types. The method performs error checking
 // to ensure that the metadata file does
-func (m *MetadataHandler) CreateTableMetadata(colNames []string, colTypes []string) error {
+func (m *metadataHandler) CreateTableMetadata(colNames []string, colTypes []string) error {
 	var metadataFileName = constants.DefaultTableMetadataName + ".txt"
 	if _, err := m.fileOperator.Stat(metadataFileName); err == nil {
 		return fmt.Errorf("metadata file already exists")
@@ -52,7 +57,7 @@ func (m *MetadataHandler) CreateTableMetadata(colNames []string, colTypes []stri
 	return nil
 }
 
-func (m *MetadataHandler) ReadColumnTypes(filename string) (map[string]string, error) {
+func (m *metadataHandler) ReadColumnTypes(filename string) (map[string]string, error) {
 	file, err := m.fileOperator.OpenFile(filename, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, fmt.Errorf("error opening file: %w", err)
