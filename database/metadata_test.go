@@ -3,6 +3,7 @@ package database
 import (
 	"custom_db/utils"
 	"custom_db/wrapper"
+	wrapperMocks "custom_db/wrapper/mocks"
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/mock"
@@ -13,7 +14,7 @@ import (
 func TestCreateTableMetadata(t *testing.T) {
 
 	type fields struct {
-		fileOperator *wrapper.MockFileOperator
+		fileOperator *wrapperMocks.FileOperator
 	}
 
 	type args struct {
@@ -147,7 +148,7 @@ func TestCreateTableMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			tt.fields = fields{
-				fileOperator: wrapper.NewFileOperatorMock(t),
+				fileOperator: wrapperMocks.NewFileOperator(t),
 			}
 
 			if tt.beforeTest != nil {

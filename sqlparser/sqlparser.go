@@ -29,12 +29,20 @@ func (s *SqlParser) ParseSQLQuery(query string) ([]map[string]any, error) {
 
 	tokens := strings.Fields(query)
 	if len(tokens) < 4 {
-		return result, fmt.Errorf("invalid sql query")
+		if !(len(tokens) == 3 && strings.ToUpper(tokens[0]) == "DROP") {
+			return result, fmt.Errorf("invalid sql query")
+		}
 	}
 	if strings.ToUpper(tokens[0]) == "CREATE" && strings.ToUpper(tokens[1]) == "TABLE" {
 		tableName := tokens[2]
 		return result, s.handleCreateTable(tableName, query)
 	}
+	// for Drop table
+	if strings.ToUpper(tokens[0]) == "DROP" && strings.ToUpper(tokens[1]) == "TABLE" {
+		tableName := tokens[2]
+		return result, s.handleDropTable(tableName)
+	}
+
 	if strings.ToUpper(tokens[0]) == "INSERT" && strings.ToUpper(tokens[1]) == "INTO" {
 		tableName := tokens[2]
 		return result, s.handleInsertInto(tableName, tokens)
@@ -102,6 +110,15 @@ func (s *SqlParser) handleSelectFrom(tableName, query string) ([]map[string]any,
 	}
 
 	return result, err
+
+}
+
+func (s *SqlParser) handleDropTable(tableName string) error {
+	err := s.TableHandler.DropTable(tableName)
+	if err != nil {
+		return fmt.Errorf("error dropping table: %w", err)
+	}
+	return nil
 
 }
 

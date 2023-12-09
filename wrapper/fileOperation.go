@@ -10,6 +10,7 @@ type FileOperator interface {
 	OpenFile(name string, flag int, perm os.FileMode) (*os.File, error)
 	WriteString(file *os.File, s string) (int, error)
 	CloseFile(file *os.File) error
+	DeleteFile(fileName string) error
 }
 
 // FileWrapper is the  implementation of FileOperator
@@ -55,6 +56,10 @@ func (f *fileOperator) CloseFile(file *os.File) error {
 // - error if there is any or nil
 func (f *fileOperator) WriteString(file *os.File, s string) (int, error) {
 	return fmt.Fprintf(file, "%s\n", s)
+}
+
+func (f *fileOperator) DeleteFile(fileName string) error {
+	return os.Remove(fileName)
 }
 
 func NewFileOperator() FileOperator {

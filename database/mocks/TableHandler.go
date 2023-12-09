@@ -27,6 +27,24 @@ func (_m *TableHandler) CreateEmptyTable(tableName string) error {
 	return r0
 }
 
+// DropTable provides a mock function with given fields: tableName
+func (_m *TableHandler) DropTable(tableName string) error {
+	ret := _m.Called(tableName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DropTable")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(tableName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // InsertIntoTable provides a mock function with given fields: tableName, values
 func (_m *TableHandler) InsertIntoTable(tableName string, values []string) error {
 	ret := _m.Called(tableName, values)
