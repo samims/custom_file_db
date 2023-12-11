@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  web:
+    container_name: sql_web
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+
+  redis:
+    container_name: sql_redis
+    image: "redis:alpine3.19"
+    ports:
+      - "6379:6379"
