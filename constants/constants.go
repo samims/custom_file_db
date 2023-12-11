@@ -1,8 +1,7 @@
 package constants
 
 const (
-	DefaultTableName         = "default_table"
-	DefaultTableMetadataName = "default_table_metadata"
+	RedisLogName = "sql_log"
 
 	IntegerType = "int"
 	StringType  = "string"

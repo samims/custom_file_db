@@ -6,6 +6,7 @@ import (
 	"custom_db/sqlparser"
 	"custom_db/wrapper"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"net/http"
 	"sync"
 	"time"
@@ -21,11 +22,19 @@ type apiRunner struct {
 func (runner *apiRunner) Go(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	redisDB := wrapper.NewRedisOperator(redisClient)
+
 	fileOperator := wrapper.NewFileOperator()
 	metadataHandler := database.NewMetadataHandler(fileOperator)
 	tableHandler := database.NewTableHandler(fileOperator, metadataHandler)
 
-	sqlParser := sqlparser.NewSqlParser(metadataHandler, tableHandler)
+	sqlParser := sqlparser.NewSqlParser(metadataHandler, tableHandler, redisDB)
 
 	router := Init(*sqlParser)
 

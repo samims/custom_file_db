@@ -1,58 +1,84 @@
 package sqlparser
 
 import (
+	"context"
 	"custom_db/constants"
 	"custom_db/database"
 	"custom_db/utils"
+	"custom_db/wrapper"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // SqlParser represents a SQL parser that handles metadata and table operations.
 type SqlParser struct {
 	MetadataHandler database.MetadataHandler
 	TableHandler    database.TableHandler
+	RedisDB         wrapper.RedisOperator
 }
 
 // NewSqlParser creates a new instance of SqlParser initialized with the provided MetadataHandler and TableHandler.
 // The MetadataHandler is used for handling metadata operations such as creating table metadata, while the TableHandler is used for handling table operations such as inserting data into
-func NewSqlParser(metadataHandler database.MetadataHandler, tableHandler database.TableHandler) *SqlParser {
+func NewSqlParser(metadataHandler database.MetadataHandler, tableHandler database.TableHandler, redisDB wrapper.RedisOperator) *SqlParser {
 	return &SqlParser{
 		MetadataHandler: metadataHandler,
 		TableHandler:    tableHandler,
+		RedisDB:         redisDB,
 	}
 }
 
 func (s *SqlParser) ParseSQLQuery(query string) ([]map[string]any, error) {
 	var result []map[string]any
+	var err error
+	successfulExecution := true
 
 	tokens := strings.Fields(query)
 	if len(tokens) < 4 {
 		if !(len(tokens) == 3 && strings.ToUpper(tokens[0]) == "DROP") {
-			return result, fmt.Errorf("invalid sql query")
+			err = fmt.Errorf("invalid sql query")
+			pushLogToRedis(s.RedisDB, query, false)
+			return result, err
 		}
 	}
 	if strings.ToUpper(tokens[0]) == "CREATE" && strings.ToUpper(tokens[1]) == "TABLE" {
 		tableName := tokens[2]
-		return result, s.handleCreateTable(tableName, query)
+		err = s.handleCreateTable(tableName, query)
+		if err != nil {
+			successfulExecution = false
+		}
+		pushLogToRedis(s.RedisDB, query, successfulExecution)
+		return result, err
 	}
 	// for Drop table
 	if strings.ToUpper(tokens[0]) == "DROP" && strings.ToUpper(tokens[1]) == "TABLE" {
 		tableName := tokens[2]
-		return result, s.handleDropTable(tableName)
+		err = s.handleDropTable(tableName)
+		successfulExecution = err == nil
+		pushLogToRedis(s.RedisDB, query, successfulExecution)
+		return result, err
 	}
 
 	if strings.ToUpper(tokens[0]) == "INSERT" && strings.ToUpper(tokens[1]) == "INTO" {
 		tableName := tokens[2]
-		return result, s.handleInsertInto(tableName, tokens)
-	}
-
-	if strings.ToUpper(tokens[0]) == "SELECT" && strings.ToUpper(tokens[1]) == "*" && strings.ToUpper(tokens[2]) == "FROM" {
-		tableName := tokens[3]
-		result, err := s.handleSelectFrom(tableName, query)
+		err = s.handleInsertInto(tableName, tokens)
+		successfulExecution = err == nil
+		pushLogToRedis(s.RedisDB, query, successfulExecution)
 		return result, err
 	}
+
+	if strings.ToUpper(tokens[0]) == "SELECT" &&
+		(strings.ToUpper(tokens[1]) == "*" || strings.ToUpper(tokens[1]) == "") &&
+		strings.ToUpper(tokens[2]) == "FROM" {
+		tableName := tokens[3]
+		result, err := s.handleSelectFrom(tableName, query)
+		successfulExecution = err == nil
+		pushLogToRedis(s.RedisDB, query, successfulExecution)
+		return result, err
+	}
+
+	pushLogToRedis(s.RedisDB, query, false)
 	return result, fmt.Errorf("unsupported SQL operation")
 }
 
@@ -193,4 +219,21 @@ func extractColumns(query string) ([]string, []string, error) {
 // It returns true if the column type is either "int" or "string", false otherwise.
 func isValidColumnType(cType string) bool {
 	return (strings.ToLower(cType) == constants.IntegerType) || (strings.ToLower(cType) == constants.StringType)
+}
+
+func pushLogToRedis(rdb wrapper.RedisOperator, log string, status bool) {
+	ctx := context.Background()
+
+	myLog := wrapper.LogObject{
+		Sql:       log,
+		Status:    status,
+		Timestamp: time.Now(),
+	}
+
+	go func(rdb wrapper.RedisOperator, myLog wrapper.LogObject) {
+		err := rdb.Push(ctx, constants.RedisLogName, myLog)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(rdb, myLog)
 }
