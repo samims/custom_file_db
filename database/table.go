@@ -70,6 +70,14 @@ func (t *tableHandler) InsertIntoTable(tableName string, values []string) error 
 	return nil
 }
 
+// ValidateDataType validates the data types of the values to be inserted into the table.
+// It reads the column types from the metadata file associated with the table and
+// compares them with the types of the values.
+// Parameters:
+// - tableName: the name of the table
+// - values: a slice of strings representing the values to be validated
+// Returns:
+// - error: if there is an error reading the column types or if the values have incorrect data types
 func (t *tableHandler) ValidateDataType(tableName string, values []string) error {
 	metadataFile := utils.GetMetadataFileName(tableName)
 	types, err := t.metaDataHandler.ReadColumnTypes(metadataFile)

@@ -7,6 +7,7 @@ import (
 	"custom_db/wrapper"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"github.com/spf13/viper"
 	"net/http"
 	"sync"
 	"time"
@@ -21,11 +22,12 @@ type apiRunner struct {
 
 func (runner *apiRunner) Go(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
+	config := NewConfig(viper.New())
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:     config.GetRedisAddress(),
+		Password: config.GetRedisPass(),   // no password set
+		DB:       config.GetRedisDBName(), // use default DB
 	})
 
 	redisDB := wrapper.NewRedisOperator(redisClient)
@@ -39,7 +41,7 @@ func (runner *apiRunner) Go(ctx context.Context, wg *sync.WaitGroup) {
 	router := Init(*sqlParser)
 
 	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", 8080),
+		Addr:         fmt.Sprintf(":%d", config.GetAppPort()),
 		Handler:      router,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,

@@ -21,8 +21,6 @@ type metadataHandler struct {
 	fileOperator wrapper.FileOperator
 }
 
-// NewMetadataHandler creates a new instance of MetadataHandler with the
-// provided metadataFile string.
 func NewMetadataHandler(fileOperator wrapper.FileOperator) MetadataHandler {
 	return &metadataHandler{
 		fileOperator: fileOperator,
@@ -62,6 +60,10 @@ func (m *metadataHandler) CreateTableMetadata(tableName string, colNames []strin
 	return nil
 }
 
+// ReadColumnTypes reads the column types from the specified metadata file.
+// It returns a map with column names as keys and column types as values.
+// If any error occurs while reading the file or parsing the metadata format,
+// it returns nil and the corresponding error.
 func (m *metadataHandler) ReadColumnTypes(filename string) (map[string]string, error) {
 	file, err := m.fileOperator.OpenFile(filename, os.O_RDONLY, 0)
 	if err != nil {
@@ -92,6 +94,8 @@ func (m *metadataHandler) ReadColumnTypes(filename string) (map[string]string, e
 	return metaTypes, nil
 }
 
+// ReadColNamesAndTypesInArray reads the column names and types from the metadata file
+// specified by the `fileName` parameter.
 func (m *metadataHandler) ReadColNamesAndTypesInArray(fileName string) ([]string, []string, error) {
 	types, err := m.ReadColumnTypes(fileName)
 	if err != nil {

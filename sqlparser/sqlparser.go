@@ -42,6 +42,7 @@ func (s *SqlParser) ParseSQLQuery(query string) ([]map[string]any, error) {
 			return result, err
 		}
 	}
+
 	if strings.ToUpper(tokens[0]) == "CREATE" && strings.ToUpper(tokens[1]) == "TABLE" {
 		tableName := tokens[2]
 		err = s.handleCreateTable(tableName, query)
@@ -51,7 +52,7 @@ func (s *SqlParser) ParseSQLQuery(query string) ([]map[string]any, error) {
 		pushLogToRedis(s.RedisDB, query, successfulExecution)
 		return result, err
 	}
-	// for Drop table
+
 	if strings.ToUpper(tokens[0]) == "DROP" && strings.ToUpper(tokens[1]) == "TABLE" {
 		tableName := tokens[2]
 		err = s.handleDropTable(tableName)
@@ -82,7 +83,6 @@ func (s *SqlParser) ParseSQLQuery(query string) ([]map[string]any, error) {
 	return result, fmt.Errorf("unsupported SQL operation")
 }
 
-// func (s *SqlParser) handleCreateTable(tokens []string) error {
 func (s *SqlParser) handleCreateTable(tableName, query string) error {
 
 	colNames, colTypes, err := extractColumns(query)
@@ -112,7 +112,6 @@ func (s *SqlParser) handleInsertInto(tableName string, tokens []string) error {
 		return fmt.Errorf("no values found in insert query")
 	}
 
-	// insert into the table
 	err := s.TableHandler.InsertIntoTable(tableName, extractedValues)
 
 	if err != nil {
